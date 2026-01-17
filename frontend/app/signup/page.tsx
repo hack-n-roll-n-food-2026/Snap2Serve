@@ -1,83 +1,36 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
-type UserAuth = {
-  email: string;
-};
-
-const AUTH_KEY = "snap2serve:auth"; // stores { email }
-const USERS_KEY = "snap2serve:users"; // stores { [email]: { password } }
-
-function loadUsers(): Record<string, { password: string }> {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveUsers(users: Record<string, { password: string }>) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function setAuthedUser(email: string) {
-  const payload: UserAuth = { email };
-  localStorage.setItem(AUTH_KEY, JSON.stringify(payload));
-}
-
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
-
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  const canSubmit = useMemo(() => {
-    return email.trim().length > 3 && password.trim().length >= 4;
-  }, [email, password]);
-
-  function onSubmit() {
-    setError(null);
-    setOk(null);
-
-    const e = email.trim().toLowerCase();
-    const p = password;
-
-    const users = loadUsers();
-    const exists = !!users[e];
-
-    if (mode === "signup") {
-      if (exists) {
-        setError("Account already exists. Switch to Login.");
-        return;
+    try {
+      if (mode === "signup") {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
       }
-      users[e] = { password: p };
-      saveUsers(users);
-      setAuthedUser(e);
-      setOk("Signed up ✅ Redirecting...");
-      setTimeout(() => router.push("/signup"), 400);
-      return;
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message || "Authentication failed");
+    } finally {
+      setLoading(false);
     }
-
-    // login
-    if (!exists) {
-      setError("No account found. Switch to Sign up.");
-      return;
-    }
-    if (users[e].password !== p) {
-      setError("Wrong password.");
-      return;
-    }
-    setAuthedUser(e);
-    setOk("Logged in ✅ Redirecting...");
-    setTimeout(() => router.push("/profile"), 400);
-  }
+  };
 
   return (
     <main style={styles.page}>
@@ -107,7 +60,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
+          <form onSubmit={handleAuth}>
             <div style={styles.inputGroup}>
               <label style={styles.label}>📧 Email</label>
               <input
@@ -125,7 +78,7 @@ export default function LoginPage() {
               <input
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="min 4 chars"
+                placeholder="min 6 chars"
                 style={styles.input}
                 type="password"
                 autoComplete={mode === "signup" ? "new-password" : "current-password"}
@@ -134,10 +87,9 @@ export default function LoginPage() {
             </div>
 
             {error && <div style={styles.error}>{error}</div>}
-            {ok && <div style={styles.ok}>{ok}</div>}
 
-            <button disabled={!canSubmit} type="submit" style={{ ...styles.primary, opacity: canSubmit ? 1 : 0.5 }}>
-              {mode === "login" ? "Login" : "Create account"}
+            <button disabled={loading} type="submit" style={{ ...styles.primary, opacity: loading ? 0.5 : 1 }}>
+              {loading ? "Loading..." : mode === "login" ? "Login" : "Create account"}
             </button>
           </form>
 

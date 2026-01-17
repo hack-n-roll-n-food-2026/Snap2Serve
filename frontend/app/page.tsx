@@ -8,13 +8,28 @@ export default function Page() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState("");
 
-  // Redirect to auth if not logged in
+  const canContinue = useMemo(() => !!file && prompt.trim().length > 0, [file, prompt]);
+
+  // Redirect to signup if not logged in
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/auth");
+      router.push("/signup");
     }
   }, [user, loading, router]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      router.push("/signup");
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -27,22 +42,6 @@ export default function Page() {
   if (!user) {
     return null;
   }
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-      router.push("/auth");
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState("");
-
-  const canContinue = useMemo(() => !!file && prompt.trim().length > 0, [file, prompt]);
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -149,11 +148,12 @@ export default function Page() {
               <div style={S.smallMuted}>Cuisine / dish</div>
             </div>
 
-            <input
+            <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder='e.g., "Korean spicy chicken", "Japanese ramen", "Healthy salad bowl"'
               style={S.textInput}
+              rows={3}
             />
 
             <div style={S.hint}>
@@ -268,7 +268,7 @@ const S: Record<string, React.CSSProperties> = {
     overflow: "hidden",
   },
 
-  // NEW: top blend that looks like the sheet is “melting” into hero
+  // NEW: top blend that looks like the sheet is "melting" into hero
   sheetBlendTop: {
     position: "absolute",
     left: 0,
@@ -339,6 +339,9 @@ const S: Record<string, React.CSSProperties> = {
     fontWeight: 750,
     fontSize: 14,
     background: "rgba(255,255,255,.98)",
+    minHeight: "60px",
+    resize: "vertical" as const,
+    boxSizing: "border-box" as const,
   },
   hint: { marginTop: 10, fontSize: 12, color: T.muted },
   ctaRow: { marginTop: 14, display: "flex", justifyContent: "flex-end" },
