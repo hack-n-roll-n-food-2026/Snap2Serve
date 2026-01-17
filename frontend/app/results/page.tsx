@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import LoadingMinigame from "@/app/components/LoadingMinigame";
 
 type Ingredient = { name: string; confidence?: number };
 
@@ -32,6 +33,7 @@ export default function ResultsPage() {
   const [editingIngredients, setEditingIngredients] = useState(false);
   const [newIngredient, setNewIngredient] = useState("");
   const [editingPrompt, setEditingPrompt] = useState(false);
+  const [showMinigame, setShowMinigame] = useState(false);
 
   // read from sessionStorage (set by page 1)
   useEffect(() => {
@@ -74,8 +76,12 @@ export default function ResultsPage() {
     }
 
     setLoading(true);
+    setShowMinigame(true);
     setError(null);
     setStage("Uploading image…");
+
+    // Wait 30s for the minigame countdown
+    await new Promise(resolve => setTimeout(resolve, 30000));
 
     try {
       const blob = await (await fetch(imageDataUrl)).blob();
@@ -102,13 +108,18 @@ export default function ResultsPage() {
       setStage("");
     } finally {
       setLoading(false);
+      setShowMinigame(false);
     }
   }
 
   async function recommendRecipes() {
     setLoading(true);
+    setShowMinigame(true);
     setError(null);
     setStage("Finding best recipes…");
+
+    // Wait 30s for the minigame countdown
+    await new Promise(resolve => setTimeout(resolve, 30000));
 
     try {
       const recipeRes = await fetch(`${BACKEND}/agent/recommend`, {
@@ -134,6 +145,7 @@ export default function ResultsPage() {
       setStage("");
     } finally {
       setLoading(false);
+      setShowMinigame(false);
     }
   }
 
@@ -165,6 +177,9 @@ export default function ResultsPage() {
 
   return (
     <div style={S.page}>
+      {showMinigame && (
+        <LoadingMinigame mock durationMs={30000} />
+      )}
       <div style={S.topbar}>
         <button onClick={handleBack} style={S.backBtn}>← Back</button>
         <div style={S.brand}>Snap2Serve</div>
