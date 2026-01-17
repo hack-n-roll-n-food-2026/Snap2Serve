@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snap2Serve Vision API Tester</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .config-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .config-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .config-section input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .config-section input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .upload-area {
+            border: 3px dashed #d0d0d0;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fafafa;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8e8ff;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .preview-section {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .preview-section.visible {
+            display: block;
+        }
+
+        .preview-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            object-fit: cover;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-clear {
+            background: #f0f0f0;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .btn-clear:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loading.visible {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f0f0f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 2px solid #eee;
+        }
+
+        .results-section.visible {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .results-header h3 {
+            font-size: 1.3rem;
+            color: #333;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .ingredients-section {
+            margin-bottom: 20px;
+        }
+
+        .ingredients-section h4 {
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ingredients-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .ingredient-tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .ingredient-tag.normalized {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .debug-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .debug-section h4 {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .debug-content {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            color: #333;
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .error-message {
+            background: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-radius: 8px;
+            padding: 20px;
+            color: #c53030;
+        }
+
+        .error-message h4 {
+            margin-bottom: 10px;
+        }
+
+        .no-ingredients {
+            color: #666;
+            font-style: italic;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍳 Snap2Serve</h1>
+        <p class="subtitle">Vision API Testing Interface</p>
+
+        <div class="card">
+            <div class="config-section">
+                <label for="apiUrl">API Endpoint URL</label>
+                <input type="text" id="apiUrl" value="http://localhost:8000/vision/ingredients" placeholder="http://localhost:8000/vision/ingredients">
+            </div>
+
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">Click or drag an image here</div>
+                <div class="upload-hint">Supports JPG, PNG, WEBP</div>
+            </div>
+            <input type="file" id="fileInput" accept="image/*">
+
+            <div class="preview-section" id="previewSection">
+                <div class="preview-container">
+                    <img id="previewImage" class="preview-image" src="" alt="Preview">
+                    <div class="file-info">
+                        <div class="file-name" id="fileName"></div>
+                        <div class="file-size" id="fileSize"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="analyzeBtn" disabled>
+                🔍 Analyze Image
+            </button>
+            <button class="btn btn-clear" id="clearBtn" style="display: none;">
+                Clear & Upload New
+            </button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Analyzing image with Gemini AI...</div>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="results-header">
+                    <h3>Results</h3>
+                    <span class="status-badge" id="statusBadge"></span>
+                </div>
+
+                <div id="resultsContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const previewImage = document.getElementById('previewImage');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const loading = document.getElementById('loading');
+        const resultsSection = document.getElementById('resultsSection');
+        const statusBadge = document.getElementById('statusBadge');
+        const resultsContent = document.getElementById('resultsContent');
+        const apiUrlInput = document.getElementById('apiUrl');
+
+        let selectedFile = null;
+
+        // Drag and drop handlers
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                handleFile(files[0]);
+            }
+        });
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            selectedFile = file;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            
+            previewSection.classList.add('visible');
+            analyzeBtn.disabled = false;
+            clearBtn.style.display = 'block';
+            resultsSection.classList.remove('visible');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        clearBtn.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            previewSection.classList.remove('visible');
+            resultsSection.classList.remove('visible');
+            analyzeBtn.disabled = true;
+            clearBtn.style.display = 'none';
+        });
+
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const apiUrl = apiUrlInput.value.trim();
+            if (!apiUrl) {
+                alert('Please enter the API URL');
+                return;
+            }
+
+            // Show loading
+            loading.classList.add('visible');
+            analyzeBtn.disabled = true;
+            resultsSection.classList.remove('visible');
+
+            try {
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess(data);
+                } else {
+                    showError(data.detail || 'API request failed', response.status);
+                }
+            } catch (error) {
+                showError(error.message, 'Network Error');
+            } finally {
+                loading.classList.remove('visible');
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        function showSuccess(data) {
+            statusBadge.textContent = 'Success';
+            statusBadge.className = 'status-badge status-success';
+
+            let html = '';
+
+            // Raw ingredients
+            html += '<div class="ingredients-section">';
+            html += '<h4>🥬 Raw Ingredients Detected</h4>';
+            if (data.ingredients_raw && data.ingredients_raw.length > 0) {
+                html += '<div class="ingredients-list">';
+                data.ingredients_raw.forEach(ing => {
+                    html += `<span class="ingredient-tag">${escapeHtml(ing)}</span>`;
+                });
+                html += '</div>';
+            } else {
+                html += '<div class="no-ingredients">No ingredients detected</div>';
+            }
+            html += '</div>';
+
+            // Normalized ingredients
+            html += '<div class="ingredients-section">';
+            html += '<h4>✨ Normalized Ingredients</h4>';
+            if (data.ingredients_normalized && data.ingredients_normalized.length > 0) {
+                html += '<div class="ingredients-list">';
+                data.ingredients_normalized.forEach(ing => {
+                    html += `<span class="ingredient-tag normalized">${escapeHtml(ing)}</span>`;
+                });
+                html += '</div>';
+            } else {
+                html += '<div class="no-ingredients">No normalized ingredients</div>';
+            }
+            html += '</div>';
+
+            // Debug info
+            html += '<div class="debug-section">';
+            html += '<h4>📊 Debug Information</h4>';
+            html += `<div class="debug-content">${escapeHtml(JSON.stringify(data, null, 2))}</div>`;
+            html += '</div>';
+
+            resultsContent.innerHTML = html;
+            resultsSection.classList.add('visible');
+        }
+
+        function showError(message, status) {
+            statusBadge.textContent = `Error ${status}`;
+            statusBadge.className = 'status-badge status-error';
+
+            resultsContent.innerHTML = `
+                <div class="error-message">
+                    <h4>❌ Request Failed</h4>
+                    <p>${escapeHtml(message)}</p>
+                </div>
+            `;
+            resultsSection.classList.add('visible');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
