@@ -9,6 +9,12 @@ type Recipe = {
   instructions?: string | string[];
   ingredients?: string[];
   missing_items?: string[];
+  nutrition?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fats: number;
+  };
 };
 
 export default function RecipePage() {
@@ -35,11 +41,36 @@ export default function RecipePage() {
   }, []);
 
   // Helper to format instructions (handle both string and array)
-  const formatInstructions = (instructions: string | string[] | undefined): string => {
+  const formatInstructions = (instructions: string | string[] | undefined): React.ReactNode => {
     if (!instructions) return "";
-    if (typeof instructions === "string") return instructions;
-    if (Array.isArray(instructions)) return instructions.join("\n");
-    return "";
+    
+    let steps: string[] = [];
+    
+    if (typeof instructions === "string") {
+      // Split by "Step N:" pattern or numbered patterns like "1.", "2."
+      steps = instructions
+        .split(/(?=Step \d+:|^\d+\.)/i)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    } else if (Array.isArray(instructions)) {
+      steps = instructions;
+    }
+    
+    // If we found multiple steps, render them as a list
+    if (steps.length > 1) {
+      return (
+        <ol style={{ margin: 0, paddingLeft: 24, lineHeight: 1.8 }}>
+          {steps.map((step, idx) => (
+            <li key={idx} style={{ marginBottom: 12 }}>
+              {step.replace(/^Step \d+:\s*/i, '').replace(/^\d+\.\s*/, '')}
+            </li>
+          ))}
+        </ol>
+      );
+    }
+    
+    // Otherwise just display as text
+    return instructions;
   };
 
   if (!recipe) {
@@ -85,6 +116,33 @@ export default function RecipePage() {
                   <li key={idx} style={S.ingredientItem}>{ingredient}</li>
                 ))}
               </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Nutrition Section */}
+        {recipe.nutrition && (
+          <div style={S.section}>
+            <div style={S.sectionTitle}>Nutritional Information</div>
+            <div style={S.card}>
+              <div style={S.nutritionGrid}>
+                <div style={S.nutritionItem}>
+                  <div style={S.nutritionValue}>{recipe.nutrition.calories}</div>
+                  <div style={S.nutritionLabel}>Calories</div>
+                </div>
+                <div style={S.nutritionItem}>
+                  <div style={S.nutritionValue}>{recipe.nutrition.protein}g</div>
+                  <div style={S.nutritionLabel}>Protein</div>
+                </div>
+                <div style={S.nutritionItem}>
+                  <div style={S.nutritionValue}>{recipe.nutrition.carbs}g</div>
+                  <div style={S.nutritionLabel}>Carbs</div>
+                </div>
+                <div style={S.nutritionItem}>
+                  <div style={S.nutritionValue}>{recipe.nutrition.fats}g</div>
+                  <div style={S.nutritionLabel}>Fats</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -229,7 +287,32 @@ const S: Record<string, any> = {
     whiteSpace: "pre-wrap",
     wordWrap: "break-word",
   },
-  
+
+  nutritionGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+    gap: 20,
+    textAlign: "center",
+  },
+  nutritionItem: {
+    padding: 16,
+    background: "rgba(215,178,106,.08)",
+    borderRadius: 12,
+    border: "1px solid rgba(215,178,106,.25)",
+  },
+  nutritionValue: {
+    fontSize: 24,
+    fontWeight: 950,
+    color: "#0f172a",
+    marginBottom: 4,
+  },
+  nutritionLabel: {
+    fontSize: 14,
+    color: "#0f172a",
+    opacity: 0.8,
+    fontWeight: 600,
+  },
+
   muted: { opacity: 0.7 },
 };
 

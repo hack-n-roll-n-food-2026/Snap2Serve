@@ -3,6 +3,8 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function Page() {
   const router = useRouter();
@@ -11,6 +13,7 @@ export default function Page() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
+  const [medicalCondition, setMedicalCondition] = useState<string>("");
 
   const canContinue = useMemo(() => !!file && prompt.trim().length > 0, [file, prompt]);
 
@@ -20,6 +23,25 @@ export default function Page() {
       router.push("/signup");
     }
   }, [user, loading, router]);
+
+  // Fetch user's medical condition from Firestore
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchMedicalCondition = async () => {
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          setMedicalCondition(userSnap.data().medicalCondition || "");
+        }
+      } catch (error) {
+        console.error("Error fetching medical condition:", error);
+      }
+    };
+
+    fetchMedicalCondition();
+  }, [user]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -55,8 +77,15 @@ export default function Page() {
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = String(reader.result);
+      let fullPrompt = prompt.trim();
+      
+      // Add medical condition to prompt if it exists
+      if (medicalCondition) {
+        fullPrompt += ` (Consider my medical condition: ${medicalCondition})`;
+      }
+      
       sessionStorage.setItem("snap2serve:image", dataUrl);
-      sessionStorage.setItem("snap2serve:prompt", prompt.trim());
+      sessionStorage.setItem("snap2serve:prompt", fullPrompt);
       router.push("/results");
     };
     reader.readAsDataURL(file);
@@ -80,6 +109,21 @@ export default function Page() {
             </div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <span style={S.chipGold}>Premium</span>
+              <button
+                onClick={() => router.push("/profile")}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(215,178,106,.55)",
+                  background: "rgba(215,178,106,.12)",
+                  color: "#D7B26A",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 950,
+                }}
+              >
+                👤 Profile
+              </button>
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}

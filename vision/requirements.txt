@@ -4,3 +4,4 @@ python-multipart
 pydantic
 python-dotenv
 google-genai
+requests

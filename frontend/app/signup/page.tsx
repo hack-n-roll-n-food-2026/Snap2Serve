@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -20,9 +21,24 @@ export default function SignupPage() {
 
     try {
       if (mode === "signup") {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Create Firestore document for new user with timestamps
+        const userRef = doc(db, "users", userCredential.user.uid);
+        const now = new Date();
+        await setDoc(userRef, {
+          email: userCredential.user.email,
+          medicalCondition: "",
+          photoURL: "",
+          createdAt: now,
+          lastLoginAt: now,
+        });
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        // Update last login timestamp
+        const userRef = doc(db, "users", userCredential.user.uid);
+        await setDoc(userRef, {
+          lastLoginAt: new Date(),
+        }, { merge: true });
       }
       router.push("/");
     } catch (err: any) {
@@ -94,10 +110,6 @@ export default function SignupPage() {
               {loading ? "Loading..." : mode === "login" ? "Login" : "Create account"}
             </button>
           </form>
-
-          <button onClick={() => router.push("/")} style={styles.ghost}>
-            ← Back to Home
-          </button>
         </div>
       </div>
     </main>
