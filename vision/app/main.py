@@ -18,7 +18,11 @@ async def vision_ingredients(image: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Empty upload.")
 
     # Step 1: extract (can be stubbed first)
-    raw = await extract_ingredients(img_bytes, filename=image.filename)
+    raw = await extract_ingredients(
+        img_bytes,
+        filename=image.filename,
+        content_type=image.content_type,
+    )
 
     # Step 2: normalize (rules + synonyms)
     normalized = normalize_ingredients(raw)
