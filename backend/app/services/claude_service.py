@@ -19,7 +19,13 @@ Given ingredients and a dish preference, output JSON with:
     "ingredients": ["item 1", "item 2", ...],
     "short_steps": "brief 1-2 sentence overview of the recipe",
     "instructions": "step 1. step 2. step 3..." (detailed cooking steps as single string),
-    "missing_items": ["item1", "item2", ...]
+    "missing_items": ["item1", "item2", ...],
+    "nutrition": {
+      "calories": approximate calories per serving (number),
+      "protein": grams of protein per serving (number),
+      "carbs": grams of carbs per serving (number),
+      "fats": grams of fats per serving (number)
+    }
   }
 - shopping_list: {"category": ["item1", "item2"], ...}
 
@@ -29,6 +35,7 @@ CRITICAL RULES:
 3. missing_items MUST list ANY ingredients needed that are NOT in the user's available ingredients list.
 4. If a recipe uses only available ingredients, missing_items should be an empty array [].
 5. Always include the missing_items field, even if empty.
+6. For nutrition, provide reasonable estimates per serving based on typical values for the ingredients and portion sizes. Use whole numbers.
 
 Return ONLY valid JSON. No markdown. No extra text.
 """

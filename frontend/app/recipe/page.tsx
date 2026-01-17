@@ -9,6 +9,12 @@ type Recipe = {
   instructions?: string | string[];
   ingredients?: string[];
   missing_items?: string[];
+  nutrition?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fats: number;
+  };
 };
 
 export default function RecipePage() {
@@ -85,6 +91,33 @@ export default function RecipePage() {
                   <li key={idx} style={S.ingredientItem}>{ingredient}</li>
                 ))}
               </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Nutrition Section */}
+        {recipe.nutrition && (
+          <div style={S.section}>
+            <div style={S.sectionTitle}>Nutritional Information</div>
+            <div style={S.card}>
+              <div style={S.nutritionGrid}>
+                <div style={S.nutritionItem}>
+                  <div style={S.nutritionValue}>{recipe.nutrition.calories}</div>
+                  <div style={S.nutritionLabel}>Calories</div>
+                </div>
+                <div style={S.nutritionItem}>
+                  <div style={S.nutritionValue}>{recipe.nutrition.protein}g</div>
+                  <div style={S.nutritionLabel}>Protein</div>
+                </div>
+                <div style={S.nutritionItem}>
+                  <div style={S.nutritionValue}>{recipe.nutrition.carbs}g</div>
+                  <div style={S.nutritionLabel}>Carbs</div>
+                </div>
+                <div style={S.nutritionItem}>
+                  <div style={S.nutritionValue}>{recipe.nutrition.fats}g</div>
+                  <div style={S.nutritionLabel}>Fats</div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -229,7 +262,32 @@ const S: Record<string, any> = {
     whiteSpace: "pre-wrap",
     wordWrap: "break-word",
   },
-  
+
+  nutritionGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+    gap: 20,
+    textAlign: "center",
+  },
+  nutritionItem: {
+    padding: 16,
+    background: "rgba(215,178,106,.08)",
+    borderRadius: 12,
+    border: "1px solid rgba(215,178,106,.25)",
+  },
+  nutritionValue: {
+    fontSize: 24,
+    fontWeight: 950,
+    color: "#0f172a",
+    marginBottom: 4,
+  },
+  nutritionLabel: {
+    fontSize: 14,
+    color: "#0f172a",
+    opacity: 0.8,
+    fontWeight: 600,
+  },
+
   muted: { opacity: 0.7 },
 };
 
