@@ -47,12 +47,10 @@ export default function Page() {
               <span style={{ opacity: 0.75 }}>🔎</span>
               <span style={{ opacity: 0.7 }}>Search recipes, cuisines, ingredients…</span>
             </div>
-
             <span style={S.chipGold}>Premium</span>
           </div>
 
           <div style={S.heroText}>
-            <div style={S.premiumLabel}>PREMIUM</div>
             <div style={S.heroTitle}>Menu</div>
             <div style={S.heroTitle2}>Recipevine</div>
             <div style={S.heroSub}>

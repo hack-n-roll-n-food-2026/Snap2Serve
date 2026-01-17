@@ -13,14 +13,23 @@ type Recipe = {
 
 export default function RecipePage() {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [shoppingList, setShoppingList] = useState<Record<string, string[]> | null>(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("snap2serve:selected_recipe");
+    const shoppingListStored = sessionStorage.getItem("snap2serve:shopping_list_full");
     if (stored) {
       try {
         setRecipe(JSON.parse(stored));
       } catch (e) {
         console.error("Failed to parse recipe:", e);
+      }
+    }
+    if (shoppingListStored) {
+      try {
+        setShoppingList(JSON.parse(shoppingListStored));
+      } catch (e) {
+        console.error("Failed to parse shopping list:", e);
       }
     }
   }, []);
@@ -81,7 +90,25 @@ export default function RecipePage() {
         )}
 
         {/* Missing Items */}
-        {recipe.missing_items && recipe.missing_items.length > 0 && (
+        {shoppingList && Object.keys(shoppingList).length > 0 ? (
+          <div style={S.section}>
+            <div style={S.sectionTitle}>Items to Buy</div>
+            <div style={S.card}>
+              <div style={S.shoppingList}>
+                {Object.entries(shoppingList).map(([category, items]) => (
+                  <div key={category} style={S.shoppingCategory}>
+                    <div style={S.categoryTitle}>{category}</div>
+                    <ul style={S.categoryItems}>
+                      {items.map((item, idx) => (
+                        <li key={idx} style={S.categoryItem}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : recipe.missing_items && recipe.missing_items.length > 0 ? (
           <div style={S.section}>
             <div style={S.sectionTitle}>Items to Buy</div>
             <div style={S.card}>
@@ -92,7 +119,7 @@ export default function RecipePage() {
               </ul>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Instructions Section */}
         {recipe.instructions && (
@@ -183,6 +210,17 @@ const S: Record<string, any> = {
     position: "relative",
     paddingLeft: 16,
   },
+  
+  shoppingList: { marginTop: 12, display: "flex", flexDirection: "column", gap: 10 },
+  shoppingCategory: { 
+    background: "linear-gradient(135deg, rgba(215,178,106,.08) 0%, rgba(215,178,106,.04) 100%)",
+    borderRadius: 14, 
+    padding: "16px 14px", 
+    border: "1px solid rgba(215,178,106,.25)",
+  },
+  categoryTitle: { fontWeight: 950, fontSize: 13, marginBottom: 10, color: "#0f172a", letterSpacing: 0.5, textTransform: "uppercase", opacity: 0.8 },
+  categoryItems: { margin: 0, paddingLeft: 20, listStyle: "none" },
+  categoryItem: { fontSize: 14, lineHeight: 1.6, color: "#0f172a", marginBottom: 6, position: "relative" },
   
   instructionsText: {
     fontSize: 15,
