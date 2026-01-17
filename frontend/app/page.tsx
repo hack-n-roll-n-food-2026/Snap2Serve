@@ -1,10 +1,42 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Page() {
   const router = useRouter();
+  const { user, loading, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/auth");
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(180deg, #0b0f14 0%, #111827 100%)", color: "#fff" }}>
+        Loading...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      router.push("/auth");
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -47,7 +79,25 @@ export default function Page() {
               <span style={{ opacity: 0.75 }}>🔎</span>
               <span style={{ opacity: 0.7 }}>Search recipes, cuisines, ingredients…</span>
             </div>
-            <span style={S.chipGold}>Premium</span>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <span style={S.chipGold}>Premium</span>
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,.12)",
+                  background: "rgba(255,255,255,.06)",
+                  color: "rgba(255,255,255,.85)",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 950,
+                }}
+              >
+                {isLoggingOut ? "Signing out..." : "Sign out"}
+              </button>
+            </div>
           </div>
 
           <div style={S.heroText}>
