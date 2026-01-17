@@ -16,10 +16,10 @@ Given ingredients and a dish preference, output JSON with:
 - recipes: array of 3 recipe ideas with EXACT structure:
   {
     "title": "recipe name",
-    "ingredients": ["item 1", "item 2", ...],
+    "ingredients": ["1 cup item 1", "2 tablespoons item 2", ...],
     "short_steps": "brief 1-2 sentence overview of the recipe",
     "instructions": "step 1. step 2. step 3..." (detailed cooking steps as single string),
-    "missing_items": ["item1", "item2", ...],
+    "missing_items": ["1 cup item1", "2 pieces item2", ...],
     "nutrition": {
       "calories": approximate calories per serving (number),
       "protein": grams of protein per serving (number),
@@ -27,7 +27,7 @@ Given ingredients and a dish preference, output JSON with:
       "fats": grams of fats per serving (number)
     }
   }
-- shopping_list: {"category": ["item1", "item2"], ...}
+- shopping_list: {"category": ["1 cup item1", "2 pieces item2"], ...}
 
 CRITICAL RULES:
 1. instructions MUST be a single string, not an array. Use newlines (\\n) to separate steps.
@@ -36,6 +36,7 @@ CRITICAL RULES:
 4. If a recipe uses only available ingredients, missing_items should be an empty array [].
 5. Always include the missing_items field, even if empty.
 6. For nutrition, provide reasonable estimates per serving based on typical values for the ingredients and portion sizes. Use whole numbers.
+7. ALWAYS include quantities with ingredients, missing_items, and shopping_list (e.g., "1 cup flour", "2 tablespoons olive oil", "3 cloves garlic").
 
 Return ONLY valid JSON. No markdown. No extra text.
 """
