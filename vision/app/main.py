@@ -1,8 +1,19 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from .extract import extract_ingredients
 from .normalize import normalize_ingredients
+import hashlib
 
 app = FastAPI(title="Snap2Serve Vision Service")
+
+# Enable CORS for all origins (development only)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 def health():
@@ -17,22 +28,20 @@ async def vision_ingredients(image: UploadFile = File(...)):
     if not img_bytes:
         raise HTTPException(status_code=400, detail="Empty upload.")
 
-    # Step 1: extract (can be stubbed first)
-    raw = await extract_ingredients(
+    # Stable image id (hash)
+    image_id = hashlib.sha256(img_bytes).hexdigest()
+
+    # Extract [{name, confidence}, ...]
+    detected_raw = await extract_ingredients(
         img_bytes,
         filename=image.filename,
         content_type=image.content_type,
     )
 
-    # Step 2: normalize (rules + synonyms)
-    normalized = normalize_ingredients(raw)
+    # Normalize names + dedupe
+    detected = normalize_ingredients(detected_raw)
 
     return {
-        "ingredients_raw": raw,
-        "ingredients_normalized": normalized,
-        "debug": {
-            "filename": image.filename,
-            "content_type": image.content_type,
-            "bytes": len(img_bytes),
-        },
+        "image_id": image_id,
+        "ingredients_detected": detected,
     }
