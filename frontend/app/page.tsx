@@ -17,6 +17,13 @@ export default function Page() {
 
   const canContinue = useMemo(() => !!file && prompt.trim().length > 0, [file, prompt]);
 
+  // Redirect to signup if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/signup");
+    }
+  }, [user, loading, router]);
+
   // Fetch user's medical condition from Firestore
   useEffect(() => {
     if (!user) return;
