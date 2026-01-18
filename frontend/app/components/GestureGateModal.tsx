@@ -224,14 +224,17 @@ export default function GestureGateModal({
       stopCamera();
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
-      // Small delay before closing for feedback
+      // Small delay before closing for feedback, then call onSuccess
       const timeout = setTimeout(() => {
-        onSuccess();
+        // Reset state first
         setGateState('idle');
         setCount(0);
         setTimeRemaining(timeLimit);
-      }, 1000);
+        // Then trigger the success callback which closes modal and runs the action
+        onSuccess();
+      }, 800);
       return () => clearTimeout(timeout);
     }
   }, [gateState, onSuccess, stopCamera, timeLimit]);
@@ -242,12 +245,16 @@ export default function GestureGateModal({
       stopCamera();
       if (timerRef.current) {
         clearInterval(timerRef.current);
+        timerRef.current = null;
       }
-      setGateState('idle');
-      setCount(0);
-      setTimeRemaining(timeLimit);
+      // Only reset if we're not in success state (to avoid double reset)
+      if (gateState !== 'success') {
+        setGateState('idle');
+        setCount(0);
+        setTimeRemaining(timeLimit);
+      }
     }
-  }, [isOpen, stopCamera, timeLimit]);
+  }, [isOpen, stopCamera, timeLimit, gateState]);
 
   if (!isOpen) return null;
 
