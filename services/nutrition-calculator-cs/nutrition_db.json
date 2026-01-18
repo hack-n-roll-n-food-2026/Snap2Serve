@@ -1,0 +1,8 @@
+{
+  "egg": { "CaloriesKcal": 143, "ProteinG": 13.0, "CarbsG": 1.1, "FatG": 9.5 },
+  "tomato": { "CaloriesKcal": 18, "ProteinG": 0.9, "CarbsG": 3.9, "FatG": 0.2 },
+  "chicken breast": { "CaloriesKcal": 165, "ProteinG": 31.0, "CarbsG": 0.0, "FatG": 3.6 },
+  "rice cooked": { "CaloriesKcal": 130, "ProteinG": 2.7, "CarbsG": 28.0, "FatG": 0.3 },
+  "milk": { "CaloriesKcal": 42, "ProteinG": 3.4, "CarbsG": 5.0, "FatG": 1.0 },
+  "olive oil": { "CaloriesKcal": 884, "ProteinG": 0.0, "CarbsG": 0.0, "FatG": 100.0 }
+}
