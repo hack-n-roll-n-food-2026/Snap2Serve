@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 type Recipe = {
   title: string;
@@ -22,6 +24,8 @@ export default function RecipePage() {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [shoppingList, setShoppingList] = useState<Record<string, string[]> | null>(null);
   const [showUnknownModal, setShowUnknownModal] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("snap2serve:selected_recipe");
@@ -80,6 +84,57 @@ export default function RecipePage() {
     return instructions;
   };
 
+  const handleSaveToPDF = async () => {
+    if (!contentRef.current || !recipe) return;
+    
+    setIsGeneratingPDF(true);
+    
+    try {
+      // Create a clone of the content for PDF generation
+      const element = contentRef.current;
+      
+      // Capture the content as canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#0b0f14',
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Calculate PDF dimensions
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let position = 0;
+      
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      // Save the PDF
+      const fileName = `${recipe.title.replace(/[^a-z0-9]/gi, '_')}_recipe.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   if (!recipe) {
     return (
       <div style={S.page}>
@@ -103,7 +158,7 @@ export default function RecipePage() {
         <div style={{ width: 80 }} />
       </div>
 
-      <div style={S.container}>
+      <div style={S.container} ref={contentRef}>
         <div style={S.header}>
           <div>
             <div style={S.title}>{recipe.title}</div>
@@ -205,6 +260,30 @@ export default function RecipePage() {
             </div>
           </div>
         )}
+
+        {/* Save to PDF Button */}
+        <div style={S.pdfButtonContainer}>
+          <button 
+            onClick={handleSaveToPDF} 
+            disabled={isGeneratingPDF}
+            style={{
+              ...S.pdfButton,
+              ...(isGeneratingPDF ? S.pdfButtonDisabled : {})
+            }}
+          >
+            {isGeneratingPDF ? (
+              <>
+                <span style={S.spinner}>⏳</span>
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <span style={S.pdfIcon}>📄</span>
+                Save Recipe as PDF
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Unknown Ingredients Modal */}
@@ -466,6 +545,42 @@ const S: Record<string, any> = {
     color: "#0f172a",
     borderBottom: "1px solid rgba(0,0,0,.06)",
   },
+
+  // PDF Button styles
+  pdfButtonContainer: {
+    display: "flex",
+    justifyContent: "center",
+    marginTop: 40,
+    paddingBottom: 20,
+  },
+  pdfButton: {
+    background: "linear-gradient(135deg, #d7b26a 0%, #c9a055 100%)",
+    color: "#0f172a",
+    border: "none",
+    borderRadius: 16,
+    padding: "16px 32px",
+    fontSize: 16,
+    fontWeight: 950,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    boxShadow: "0 8px 24px rgba(215, 178, 106, 0.3)",
+    transition: "all 0.3s ease",
+    letterSpacing: 0.3,
+  },
+  pdfButtonDisabled: {
+    opacity: 0.6,
+    cursor: "not-allowed",
+    background: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)",
+  },
+  pdfIcon: {
+    fontSize: 20,
+  },
+  spinner: {
+    fontSize: 20,
+    animation: "spin 1s linear infinite",
+  },
 };
 
 // add bullet point styling for ingredient lists
@@ -480,6 +595,10 @@ if (typeof document !== "undefined") {
       }
       li[style*="position: relative"]::before {
         content: '';
+      }
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
       }
     `;
     document.head.appendChild(s);
