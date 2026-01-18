@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useGestureGate } from "../context/GestureGateContext";
 
 type Ingredient = { name: string; confidence?: number };
 
@@ -18,6 +19,7 @@ const BACKEND = "https://snap2serve-backend-452474271642.asia-southeast1.run.app
 
 export default function ResultsPage() {
   const router = useRouter();
+  const { protectAction, isGateActive } = useGestureGate();
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [prompt, setPrompt] = useState<string>("");
 
@@ -73,31 +75,38 @@ export default function ResultsPage() {
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    setStage("Uploading image…");
-
+    // Protect this action with the gesture gate
     try {
-      const blob = await (await fetch(imageDataUrl)).blob();
-      const file = new File([blob], "ingredients.jpg", { type: blob.type || "image/jpeg" });
-      const form = new FormData();
-      form.append("image", file);
+      await protectAction(async () => {
+        setLoading(true);
+        setError(null);
+        setStage("Uploading image…");
 
-      setStage("Detecting ingredients…");
-      const ingRes = await fetch(`${BACKEND}/upload/image`, {
-        method: "POST",
-        body: form,
+        const blob = await (await fetch(imageDataUrl)).blob();
+        const file = new File([blob], "ingredients.jpg", { type: blob.type || "image/jpeg" });
+        const form = new FormData();
+        form.append("image", file);
+
+        setStage("Detecting ingredients…");
+        const ingRes = await fetch(`${BACKEND}/upload/image`, {
+          method: "POST",
+          body: form,
+        });
+
+        if (!ingRes.ok) throw new Error(await ingRes.text());
+        const ingJson = await ingRes.json();
+        const ingList: Ingredient[] = ingJson.ingredients_detected ?? [];
+        setIngredients(ingList);
+        setIngredientDetected(true);
+        sessionStorage.setItem("snap2serve:ingredients", JSON.stringify(ingList));
+        sessionStorage.setItem("snap2serve:ingredient_detected", "true");
+        setStage("");
       });
-
-      if (!ingRes.ok) throw new Error(await ingRes.text());
-      const ingJson = await ingRes.json();
-      const ingList: Ingredient[] = ingJson.ingredients_detected ?? [];
-      setIngredients(ingList);
-      setIngredientDetected(true);
-      sessionStorage.setItem("snap2serve:ingredients", JSON.stringify(ingList));
-      sessionStorage.setItem("snap2serve:ingredient_detected", "true");
-      setStage("");
     } catch (e: any) {
+      if (e?.message === "Gesture gate cancelled") {
+        // User cancelled the gesture gate, don't show error
+        return;
+      }
       setError(e?.message || "Something went wrong.");
       setStage("");
     } finally {
@@ -106,30 +115,37 @@ export default function ResultsPage() {
   }
 
   async function recommendRecipes() {
-    setLoading(true);
-    setError(null);
-    setStage("Finding best recipes…");
-
+    // Protect this action with the gesture gate
     try {
-      const recipeRes = await fetch(`${BACKEND}/agent/recommend`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ingredients_confirmed: topIngredients,
-          preference_text: prompt,
-        }),
-      });
+      await protectAction(async () => {
+        setLoading(true);
+        setError(null);
+        setStage("Finding best recipes…");
 
-      if (!recipeRes.ok) throw new Error(await recipeRes.text());
-      const recipeJson = await recipeRes.json();
-      const recipesList = recipeJson.recipes ?? [];
-      const shoppingListData = recipeJson.shopping_list ?? null;
-      setRecipes(recipesList);
-      setShoppingList(shoppingListData);
-      sessionStorage.setItem("snap2serve:recipes", JSON.stringify(recipesList));
-      sessionStorage.setItem("snap2serve:shopping_list", JSON.stringify(shoppingListData));
-      setStage("");
+        const recipeRes = await fetch(`${BACKEND}/agent/recommend`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ingredients_confirmed: topIngredients,
+            preference_text: prompt,
+          }),
+        });
+
+        if (!recipeRes.ok) throw new Error(await recipeRes.text());
+        const recipeJson = await recipeRes.json();
+        const recipesList = recipeJson.recipes ?? [];
+        const shoppingListData = recipeJson.shopping_list ?? null;
+        setRecipes(recipesList);
+        setShoppingList(shoppingListData);
+        sessionStorage.setItem("snap2serve:recipes", JSON.stringify(recipesList));
+        sessionStorage.setItem("snap2serve:shopping_list", JSON.stringify(shoppingListData));
+        setStage("");
+      });
     } catch (e: any) {
+      if (e?.message === "Gesture gate cancelled") {
+        // User cancelled the gesture gate, don't show error
+        return;
+      }
       setError(e?.message || "Something went wrong.");
       setStage("");
     } finally {
