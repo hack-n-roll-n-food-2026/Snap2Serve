@@ -42,19 +42,24 @@ export interface GestureWasmModule {
  * Load the WASM module dynamically
  * This handles the async initialization of the WASM binary
  * Returns null if WASM is not available (fallback to JS implementation)
+ * 
+ * NOTE: WASM is disabled for Vercel deployment - using JS fallback instead
  */
 export async function loadGestureWasm(): Promise<GestureWasmModule | null> {
+  // WASM disabled - always use JavaScript fallback for Vercel compatibility
+  // To enable WASM, build with wasm-pack and uncomment the dynamic import below
+  console.log('Using JavaScript fallback for gesture detection (WASM disabled)');
+  return null;
+  
+  /*
+  // Uncomment this block if you have WASM built and available in /public/wasm
   try {
-    // Dynamic import of the WASM module
-    // This path assumes wasm-pack output is in public/wasm
-    const wasmModule = await import(
-      /* webpackIgnore: true */
-      '/wasm/gesture_wasm.js'
-    );
-    await wasmModule.default(); // Initialize the WASM
+    const wasmModule = await import('/wasm/gesture_wasm.js');
+    await wasmModule.default();
     return wasmModule as unknown as GestureWasmModule;
   } catch (error) {
     console.warn('WASM module not available, using JavaScript fallback:', error);
     return null;
   }
+  */
 }

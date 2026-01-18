@@ -84,17 +84,21 @@ export function GestureGateProvider({
   }, [enabled]);
 
   const handleSuccess = useCallback(async () => {
+    // Close the modal first
+    setIsGateActive(false);
+    
+    // Then run the pending action
     if (pendingActionRef.current) {
-      const { resolve, action } = pendingActionRef.current;
+      const { resolve, reject, action } = pendingActionRef.current;
+      pendingActionRef.current = null;
+      
       try {
         const result = await action();
         resolve(result);
       } catch (error) {
-        pendingActionRef.current.reject(error as Error);
+        reject(error as Error);
       }
     }
-    pendingActionRef.current = null;
-    setIsGateActive(false);
   }, []);
 
   const handleCancel = useCallback(() => {
