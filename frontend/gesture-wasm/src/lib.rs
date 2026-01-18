@@ -6,18 +6,10 @@
 //!
 //! ## Gesture Definitions (using MediaPipe 21 landmarks):
 //! 
-//! Finger extended detection uses tip-to-MCP comparison along y-axis:
-//! - Thumb: landmark 4 (tip) vs landmark 2 (MCP) - use x-axis for left/right hand
-//! - Index: landmark 8 (tip) vs landmark 6 (PIP)
-//! - Middle: landmark 12 (tip) vs landmark 10 (PIP)
-//! - Ring: landmark 16 (tip) vs landmark 14 (PIP)
-//! - Pinky: landmark 20 (tip) vs landmark 18 (PIP)
-//!
-//! Gesture "6": Thumb + Pinky extended, Index + Middle + Ring folded
-//!   - Represents the number 6 in some hand-counting systems (thumb=5, pinky=1)
-//!
-//! Gesture "7": Index + Middle extended, Thumb + Ring + Pinky folded  
-//!   - Represents "peace sign" or number 2, here we call it "7" for variety
+//! Finger extended detection uses tip-to-PIP comparison along y-axis.
+//! 
+//! Gesture "6": Left hand open palm facing upward (all fingers extended, wrist below fingers)
+//! Gesture "7": Right hand open palm facing upward (all fingers extended, wrist below fingers)
 
 use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};

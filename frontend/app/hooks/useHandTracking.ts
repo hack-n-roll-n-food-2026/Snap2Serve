@@ -26,7 +26,7 @@ interface HandLandmarker {
 }
 
 interface UseHandTrackingOptions {
-  onFrame?: (landmarks: HandLandmark[] | null, timestamp: number) => void;
+  onFrame?: (landmarks: HandLandmark[] | null, handedness: string | null, timestamp: number) => void;
   enabled?: boolean;
 }
 
@@ -38,6 +38,7 @@ interface UseHandTrackingReturn {
   startCamera: () => Promise<void>;
   stopCamera: () => void;
   landmarks: HandLandmark[] | null;
+  handedness: string | null;
 }
 
 export function useHandTracking(options: UseHandTrackingOptions = {}): UseHandTrackingReturn {
@@ -52,6 +53,7 @@ export function useHandTracking(options: UseHandTrackingOptions = {}): UseHandTr
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [landmarks, setLandmarks] = useState<HandLandmark[] | null>(null);
+  const [handedness, setHandedness] = useState<string | null>(null);
 
   // Initialize MediaPipe HandLandmarker
   const initHandLandmarker = useCallback(async () => {
@@ -142,6 +144,7 @@ export function useHandTracking(options: UseHandTrackingOptions = {}): UseHandTr
     }
 
     setLandmarks(null);
+    setHandedness(null);
   }, []);
 
   // Detection loop
@@ -168,13 +171,18 @@ export function useHandTracking(options: UseHandTrackingOptions = {}): UseHandTr
         try {
           const result = handLandmarkerRef.current.detectForVideo(video, now);
           
-          // Get first hand landmarks if any
+          // Get first hand landmarks and handedness if any
           const handLandmarks = result.landmarks.length > 0 ? result.landmarks[0] : null;
+          // Note: MediaPipe returns handedness from camera's perspective, so "Left" in result means right hand (mirrored)
+          const detectedHandedness = result.handedness.length > 0 ? result.handedness[0][0]?.categoryName : null;
+          // Flip handedness since camera is mirrored
+          const actualHandedness = detectedHandedness === 'Left' ? 'Right' : detectedHandedness === 'Right' ? 'Left' : null;
           setLandmarks(handLandmarks);
+          setHandedness(actualHandedness);
 
           // Call the onFrame callback
           if (onFrame) {
-            onFrame(handLandmarks, now);
+            onFrame(handLandmarks, actualHandedness, now);
           }
 
           // Draw landmarks on canvas
@@ -215,7 +223,8 @@ export function useHandTracking(options: UseHandTrackingOptions = {}): UseHandTr
     error,
     startCamera,
     stopCamera,
-    landmarks
+    landmarks,
+    handedness
   };
 }
 

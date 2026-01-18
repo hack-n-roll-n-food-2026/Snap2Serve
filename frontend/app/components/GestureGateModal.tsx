@@ -5,8 +5,8 @@
  * before allowing them to proceed with a protected action.
  * 
  * Gesture Definitions:
- * - "6": Thumb + Pinky extended, Index + Middle + Ring folded
- * - "7": Index + Middle extended (peace sign), others folded
+ * - "6": Left hand open, palm facing upward 🫴
+ * - "7": Right hand open, palm facing upward 🫴
  */
 
 'use client';
@@ -31,23 +31,31 @@ interface GestureGateModalProps {
   timeLimit?: number;
 }
 
-// JavaScript fallback for gesture detection
-function detectGestureJS(landmarks: Landmark[] | null): 'none' | 'six' | 'seven' {
-  if (!landmarks || landmarks.length < 21) return 'none';
+/**
+ * Detect open palm facing upward gesture
+ * 
+ * Open palm = all 5 fingers extended
+ * Palm facing up = fingertips are above wrist (lower y value in screen coords)
+ * 
+ * Returns 'six' for left hand, 'seven' for right hand, 'none' otherwise
+ */
+function detectGestureJS(landmarks: Landmark[] | null, handedness: string | null): 'none' | 'six' | 'seven' {
+  if (!landmarks || landmarks.length < 21 || !handedness) return 'none';
 
-  // Check finger extension
+  // Check if all fingers are extended (open palm)
   const isFingerExtended = (tipIdx: number, pipIdx: number) => {
+    // Finger is extended if tip is above PIP (lower y = higher on screen)
     return landmarks[tipIdx].y < landmarks[pipIdx].y - 0.02;
   };
 
-  // Thumb uses distance from MCP
+  // Thumb check - uses horizontal distance
   const isThumbExtended = () => {
     const tip = landmarks[4];
     const ip = landmarks[3];
     const mcp = landmarks[2];
     const tipToMcp = Math.sqrt(Math.pow(tip.x - mcp.x, 2) + Math.pow(tip.y - mcp.y, 2));
     const ipToMcp = Math.sqrt(Math.pow(ip.x - mcp.x, 2) + Math.pow(ip.y - mcp.y, 2));
-    return tipToMcp > ipToMcp * 1.1;
+    return tipToMcp > ipToMcp * 1.05;
   };
 
   const thumb = isThumbExtended();
@@ -56,13 +64,23 @@ function detectGestureJS(landmarks: Landmark[] | null): 'none' | 'six' | 'seven'
   const ring = isFingerExtended(16, 14);
   const pinky = isFingerExtended(20, 18);
 
-  // "6": Thumb + Pinky extended, others folded
-  if (thumb && pinky && !index && !middle && !ring) {
-    return 'six';
-  }
+  // Open palm = all 5 fingers extended
+  const isOpenPalm = thumb && index && middle && ring && pinky;
 
-  // "7": Index + Middle extended (peace sign), others folded
-  if (index && middle && !thumb && !ring && !pinky) {
+  if (!isOpenPalm) return 'none';
+
+  // Check palm orientation: palm facing up means wrist (0) is below middle finger MCP (9)
+  // In screen coordinates, "below" means higher y value
+  const wrist = landmarks[0];
+  const middleMcp = landmarks[9];
+  const palmFacingUp = wrist.y > middleMcp.y + 0.05; // Wrist should be significantly below fingers
+
+  if (!palmFacingUp) return 'none';
+
+  // "6" = Left hand open palm up, "7" = Right hand open palm up
+  if (handedness === 'Left') {
+    return 'six';
+  } else if (handedness === 'Right') {
     return 'seven';
   }
 
@@ -100,13 +118,14 @@ export default function GestureGateModal({
     error: trackingError,
     startCamera,
     stopCamera,
-    landmarks
+    landmarks,
+    handedness
   } = useHandTracking({
     enabled: isOpen && gateState === 'running',
-    onFrame: useCallback((lm: Landmark[] | null) => {
+    onFrame: useCallback((lm: Landmark[] | null, hand: string | null) => {
       if (gateState !== 'running') return;
 
-      const gesture = detectGestureJS(lm);
+      const gesture = detectGestureJS(lm, hand);
       setCurrentGesture(gesture);
 
       // Stability tracking
@@ -147,7 +166,7 @@ export default function GestureGateModal({
     canScoreRef.current = true;
     stableCountRef.current = 0;
     pendingGestureRef.current = 'none';
-    setStatusMessage('Show 6 ✋ or 7 ✌️ to score!');
+    setStatusMessage('Show open palm 🫴 (Left=6, Right=7)');
     
     await startCamera();
   }, [startCamera, timeLimit]);
@@ -262,14 +281,14 @@ export default function GestureGateModal({
             <div style={styles.videoOverlay}>
               <div style={styles.gestureDemos}>
                 <div style={styles.gestureDemo}>
-                  <span style={styles.gestureEmoji}>🤙</span>
-                  <span style={styles.gestureLabel}>Show "6"</span>
-                  <span style={styles.gestureDesc}>Thumb + Pinky extended</span>
+                  <span style={styles.gestureEmoji}>�</span>
+                  <span style={styles.gestureLabel}>Left Hand = "6"</span>
+                  <span style={styles.gestureDesc}>Open palm facing up</span>
                 </div>
                 <div style={styles.gestureDemo}>
-                  <span style={styles.gestureEmoji}>✌️</span>
-                  <span style={styles.gestureLabel}>Show "7"</span>
-                  <span style={styles.gestureDesc}>Index + Middle extended</span>
+                  <span style={styles.gestureEmoji}>🫴</span>
+                  <span style={styles.gestureLabel}>Right Hand = "7"</span>
+                  <span style={styles.gestureDesc}>Open palm facing up</span>
                 </div>
               </div>
             </div>
@@ -312,7 +331,7 @@ export default function GestureGateModal({
               ...styles.statValue,
               color: currentGesture !== 'none' ? '#22c55e' : '#6b7280'
             }}>
-              {currentGesture === 'six' ? '6 🤙' : currentGesture === 'seven' ? '7 ✌️' : '—'}
+              {currentGesture === 'six' ? '6 �' : currentGesture === 'seven' ? '7 🫴' : '—'}
             </span>
           </div>
 

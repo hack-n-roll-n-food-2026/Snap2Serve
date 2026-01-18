@@ -30,7 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
-          <GestureGateProvider targetCount={50} timeLimit={30}>
+          <GestureGateProvider targetCount={20} timeLimit={30}>
             {children}
           </GestureGateProvider>
         </AuthProvider>
